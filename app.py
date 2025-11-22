@@ -3,7 +3,10 @@
 Entry point for deployment
 """
 import os
-from business_management_system import app
+from business_management_system import app, init_db
+
+# Initialize database
+init_db()
 
 # For gunicorn
 if __name__ == '__main__':
