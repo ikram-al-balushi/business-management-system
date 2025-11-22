@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">📊 Business Analytics & Reports</h2>
+
+<!-- Key Financial Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3>PKR {{ data.total_revenue }}</h3>
+                <p>Total Revenue</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <h3>PKR {{ data.total_expenses }}</h3>
+                <p>Total Expenses</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3>PKR {{ data.stock_value }}</h3>
+                <p>Stock Investment</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card {% if data.profit_loss >= 0 %}bg-success{% else %}bg-danger{% endif %} text-white">
+            <div class="card-body text-center">
+                <h3>PKR {{ data.profit_loss }}</h3>
+                <p>{% if data.profit_loss >= 0 %}Profit{% else %}Loss{% endif %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Yearly Growth Chart -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>📈 Yearly Sales Growth</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="yearlyGrowthChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>💰 Profit & Loss Breakdown</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Revenue:</strong> 
+                    <span class="text-success">PKR {{ data.total_revenue }}</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Expenses:</strong> 
+                    <span class="text-warning">-PKR {{ data.total_expenses }}</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Stock Investment:</strong> 
+                    <span class="text-info">-PKR {{ data.stock_value }}</span>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <strong>Net Result:</strong> 
+                    <span class="{% if data.profit_loss >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {% if data.profit_loss >= 0 %}+{% endif %} PKR {{ data.profit_loss }}
+                    </span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar {% if data.profit_loss >= 0 %}bg-success{% else %}bg-danger{% endif %}" 
+                         style="width: {{ ((data.profit_loss|abs / (data.total_revenue + 1)) * 100)|round }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Analytics -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>📋 Business Performance</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Total Transactions:</strong> {{ data.total_sales }}
+                </div>
+                <div class="mb-3">
+                    <strong>Average Sale Value:</strong> 
+                    PKR {{ (data.total_revenue / data.total_sales)|round(2) if data.total_sales > 0 else 0 }}
+                </div>
+                <div class="mb-3">
+                    <strong>Profit Margin:</strong> 
+                    {{ ((data.profit_loss / data.total_revenue) * 100)|round(2) if data.total_revenue > 0 else 0 }}%
+                </div>
+                <div class="mb-3">
+                    <strong>ROI on Stock:</strong> 
+                    {{ ((data.total_revenue / data.stock_value) * 100)|round(2) if data.stock_value > 0 else 0 }}%
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>🎯 Business Insights</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert {% if data.profit_loss >= 0 %}alert-success{% else %}alert-danger{% endif %}">
+                    <h6>Financial Status:</h6>
+                    {% if data.profit_loss >= 0 %}
+                        <p>✅ Your business is profitable! Keep up the good work.</p>
+                    {% else %}
+                        <p>⚠️ Your business is running at a loss. Consider reducing expenses or increasing sales.</p>
+                    {% endif %}
+                </div>
+                
+                <div class="alert alert-info">
+                    <h6>Growth Analysis:</h6>
+                    {% if data.yearly_growth|length > 1 %}
+                        {% set current_year = data.yearly_growth[-1][1] %}
+                        {% set previous_year = data.yearly_growth[-2][1] if data.yearly_growth|length > 1 else 0 %}
+                        {% set growth = ((current_year - previous_year) / previous_year * 100) if previous_year > 0 else 0 %}
+                        <p>Year-over-year growth: {{ growth|round(1) }}%</p>
+                    {% else %}
+                        <p>Need more data for growth analysis</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Yearly Growth Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>📅 Yearly Performance History</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Year</th>
+                                <th>Revenue</th>
+                                <th>Growth</th>
+                                <th>Performance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in range(data.yearly_growth|length) %}
+                            {% set year_data = data.yearly_growth[i] %}
+                            <tr>
+                                <td><strong>{{ year_data[0] }}</strong></td>
+                                <td>PKR {{ year_data[1] }}</td>
+                                <td>
+                                    {% if i > 0 %}
+                                        {% set prev_revenue = data.yearly_growth[i-1][1] %}
+                                        {% set growth = ((year_data[1] - prev_revenue) / prev_revenue * 100) if prev_revenue > 0 else 0 %}
+                                        <span class="{% if growth >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {{ growth|round(1) }}%
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if i > 0 %}
+                                        {% set prev_revenue = data.yearly_growth[i-1][1] %}
+                                        {% if year_data[1] > prev_revenue %}
+                                            <span class="badge bg-success">Growing</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Declining</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-info">Base Year</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Yearly Growth Chart
+const ctx = document.getElementById('yearlyGrowthChart').getContext('2d');
+const yearlyGrowthChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [{% for year in data.yearly_growth %}'{{ year[0] }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Revenue (PKR)'
+            data: [{% for year in data.yearly_growth %}{{ year[1] }}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Business Growth Over Years'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return 'PKR ' + value;
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

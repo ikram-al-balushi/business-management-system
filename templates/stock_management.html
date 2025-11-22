@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Management - Business Pro{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="text-white fw-bold mb-2">
+                        <i class="fas fa-boxes me-3"></i>Stock Management
+                    </h2>
+                    <p class="text-white-50 mb-0">Manage your inventory and track stock levels</p>
+                </div>
+                <button class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#addStockModal">
+                    <i class="fas fa-plus me-2"></i>Add New Stock
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Summary Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <div class="card-body">
+                    <i class="fas fa-cubes fa-2x mb-3"></i>
+                    <h4>{{ stocks|length }}</h4>
+                    <p class="mb-0">Total Products</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                <div class="card-body">
+                    <i class="fas fa-warehouse fa-2x mb-3"></i>
+                    <h4>{{ stocks|sum(attribute=2) or 0 }}</h4>
+                    <p class="mb-0">Total Quantity</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fa-2x mb-3"></i>
+                    <h4>{{ stocks|selectattr('3', '>', 0)|sum(attribute=3) or 0 }}</h4>
+                    <p class="mb-0">Items Sold</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white;">
+                <div class="card-body">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                    <h4>{{ stocks|selectattr('2', '<', 10)|list|length }}</h4>
+                    <p class="mb-0">Low Stock Items</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Table -->
+    <div class="card">
+        <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Stock Inventory
+                </h5>
+                <div class="input-group" style="width: 300px;">
+                    <input type="text" class="form-control" id="searchStock" placeholder="Search products...">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="stockTable">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-hashtag me-1"></i>ID</th>
+                            <th><i class="fas fa-tag me-1"></i>Product Name</th>
+                            <th><i class="fas fa-sort-numeric-up me-1"></i>Quantity</th>
+                            <th><i class="fas fa-chart-bar me-1"></i>Sold</th>
+                            <th><i class="fas fa-money-bill me-1"></i>Purchase Price</th>
+                            <th><i class="fas fa-dollar-sign me-1"></i>Selling Price</th>
+                            <th><i class="fas fa-truck me-1"></i>Supplier</th>
+                            <th><i class="fas fa-calendar me-1"></i>Date Added</th>
+                            <th><i class="fas fa-cogs me-1"></i>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stock in stocks %}
+                        <tr>
+                            <td><span class="badge bg-primary">{{ stock[0] }}</span></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-light rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        <i class="fas fa-box text-primary"></i>
+                                    </div>
+                                    <strong>{{ stock[1] }}</strong>
+                                </div>
+                            </td>
+                            <td>
+                                {% if stock[2] < 10 %}
+                                    <span class="badge bg-danger fs-6">{{ stock[2] }}</span>
+                                {% elif stock[2] < 50 %}
+                                    <span class="badge bg-warning fs-6">{{ stock[2] }}</span>
+                                {% else %}
+                                    <span class="badge bg-success fs-6">{{ stock[2] }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info fs-6">{{ stock[3] or 0 }}</span>
+                            </td>
+                            <td>
+                                <span class="text-success fw-bold">PKR {{ "{:,.2f}".format(stock[4]) }}</span>
+                            </td>
+                            <td>
+                                <span class="text-primary fw-bold">PKR {{ "{:,.2f}".format(stock[5]) }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ stock[6] or 'N/A' }}</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ stock[7] }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewStock({{ stock[0] }})" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-warning" onclick="editStock({{ stock[0] }})" title="Edit Stock">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete({{ stock[0] }}, '{{ stock[1] }}')" title="Delete Stock">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-box-open fa-3x mb-3"></i>
+                                    <h5>No Stock Items Found</h5>
+                                    <p>Add your first stock item to get started</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Stock Modal -->
+<div class="modal fade" id="addStockModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus-circle me-2"></i>Add New Stock Item
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addStockForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-tag me-1"></i>Product Name *
+                            </label>
+                            <input type="text" class="form-control" id="stockName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-sort-numeric-up me-1"></i>Quantity *
+                            </label>
+                            <input type="number" class="form-control" id="stockQuantity" min="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-money-bill me-1"></i>Purchase Price (PKR) *
+                            </label>
+                            <input type="number" step="0.01" class="form-control" id="purchasePrice" min="0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-dollar-sign me-1"></i>Selling Price (PKR) *
+                            </label>
+                            <input type="number" step="0.01" class="form-control" id="sellingPrice" min="0" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-truck me-1"></i>Supplier
+                            </label>
+                            <input type="text" class="form-control" id="supplier" placeholder="Supplier name (optional)">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="addToCredit">
+                                <label class="form-check-label" for="addToCredit">
+                                    Add to supplier credit
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-success" onclick="addStock()">
+                    <i class="fas fa-plus me-1"></i>Add Stock
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Stock Modal -->
+<div class="modal fade" id="editStockModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>Edit Stock Item
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editStockForm">
+                    <input type="hidden" id="editStockId">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Product Name *</label>
+                            <input type="text" class="form-control" id="editStockName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Quantity *</label>
+                            <input type="number" class="form-control" id="editStockQuantity" min="0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Purchase Price (PKR) *</label>
+                            <input type="number" step="0.01" class="form-control" id="editPurchasePrice" min="0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Selling Price (PKR) *</label>
+                            <input type="number" step="0.01" class="form-control" id="editSellingPrice" min="0" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Supplier</label>
+                            <input type="text" class="form-control" id="editSupplier">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="updateStock()">
+                    <i class="fas fa-save me-1"></i>Update Stock
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add Stock Function
+function addStock() {
+    const data = {
+        product_name: document.getElementById('stockName').value.trim(),
+        quantity: parseInt(document.getElementById('stockQuantity').value),
+        purchase_price: parseFloat(document.getElementById('purchasePrice').value),
+        selling_price: parseFloat(document.getElementById('sellingPrice').value),
+        supplier: document.getElementById('supplier').value.trim(),
+        add_to_credit: document.getElementById('addToCredit').checked
+    };
+    
+    // Validation
+    if (!data.product_name || !data.quantity || !data.purchase_price || !data.selling_price) {
+        showError('Please fill all required fields');
+        return;
+    }
+    
+    if (data.selling_price < data.purchase_price) {
+        if (!confirm('Selling price is lower than purchase price. Continue?')) {
+            return;
+        }
+    }
+    
+    const button = event.target;
+    showLoading(button);
+    
+    fetch('/add_stock', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showSuccess('Stock item added successfully!');
+            document.getElementById('addStockForm').reset();
+            bootstrap.Modal.getInstance(document.getElementById('addStockModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showError('Error adding stock item');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Network error occurred');
+    });
+}
+
+// Delete Stock Function
+function confirmDelete(stockId, productName) {
+    if (!confirm(`Delete "${productName}"? This cannot be undone.`)) {
+        return;
+    }
+    
+    fetch(`/delete_stock/${stockId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showSuccess(result.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showError(result.error);
+        }
+    })
+    .catch(error => {
+        showError('Network error occurred');
+    });
+}
+
+// View Stock Function
+function viewStock(stockId) {
+    // Find stock data from table
+    const row = document.querySelector(`tr:has(span.badge:contains('${stockId}'))`);
+    if (row) {
+        const cells = row.querySelectorAll('td');
+        const stockInfo = `
+            <strong>Product:</strong> ${cells[1].textContent.trim()}<br>
+            <strong>Quantity:</strong> ${cells[2].textContent.trim()}<br>
+            <strong>Sold:</strong> ${cells[3].textContent.trim()}<br>
+            <strong>Purchase Price:</strong> ${cells[4].textContent.trim()}<br>
+            <strong>Selling Price:</strong> ${cells[5].textContent.trim()}<br>
+            <strong>Supplier:</strong> ${cells[6].textContent.trim()}<br>
+            <strong>Date Added:</strong> ${cells[7].textContent.trim()}
+        `;
+        
+        // Create and show modal
+        const modal = document.createElement('div');
+        modal.innerHTML = `
+            <div class="modal fade" id="viewStockModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Stock Details</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            ${stockInfo}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        new bootstrap.Modal(document.getElementById('viewStockModal')).show();
+    }
+}
+
+// Edit Stock Function
+function editStock(stockId) {
+    fetch(`/get_stock/${stockId}`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                const stock = result.stock;
+                
+                // Fill edit form
+                document.getElementById('editStockId').value = stock.id;
+                document.getElementById('editStockName').value = stock.product_name;
+                document.getElementById('editStockQuantity').value = stock.quantity;
+                document.getElementById('editPurchasePrice').value = stock.purchase_price;
+                document.getElementById('editSellingPrice').value = stock.selling_price;
+                document.getElementById('editSupplier').value = stock.supplier || '';
+                
+                // Show modal
+                new bootstrap.Modal(document.getElementById('editStockModal')).show();
+            } else {
+                showError('Error loading stock data');
+            }
+        })
+        .catch(error => {
+            showError('Network error occurred');
+        });
+}
+
+// Update Stock Function
+function updateStock() {
+    const stockId = document.getElementById('editStockId').value;
+    const data = {
+        product_name: document.getElementById('editStockName').value.trim(),
+        quantity: parseInt(document.getElementById('editStockQuantity').value),
+        purchase_price: parseFloat(document.getElementById('editPurchasePrice').value),
+        selling_price: parseFloat(document.getElementById('editSellingPrice').value),
+        supplier: document.getElementById('editSupplier').value.trim()
+    };
+    
+    if (!data.product_name || !data.quantity || !data.purchase_price || !data.selling_price) {
+        showError('Please fill all required fields');
+        return;
+    }
+    
+    fetch(`/edit_stock/${stockId}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showSuccess(result.message);
+            bootstrap.Modal.getInstance(document.getElementById('editStockModal')).hide();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showError('Error updating stock');
+        }
+    })
+    .catch(error => {
+        showError('Network error occurred');
+    });
+}
+
+// Search Functionality
+document.getElementById('searchStock').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#stockTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+});
+
+// Auto-calculate profit margin
+document.getElementById('purchasePrice').addEventListener('input', calculateMargin);
+document.getElementById('sellingPrice').addEventListener('input', calculateMargin);
+
+function calculateMargin() {
+    const purchase = parseFloat(document.getElementById('purchasePrice').value) || 0;
+    const selling = parseFloat(document.getElementById('sellingPrice').value) || 0;
+    
+    if (purchase > 0 && selling > 0) {
+        const margin = ((selling - purchase) / purchase * 100).toFixed(2);
+        console.log(`Profit Margin: ${margin}%`);
+    }
+}
+</script>
+{% endblock %}

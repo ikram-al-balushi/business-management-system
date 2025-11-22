@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 text-center">
+        <h2 class="display-5 fw-bold text-white mb-3">📊 Profit & Loss Analytics</h2>
+    </div>
+</div>
+
+<!-- Key Metrics Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="metric-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <i class="fas fa-dollar-sign fa-2x mb-3"></i>
+            <h3>PKR {{ data.total_revenue }}</h3>
+            <p class="mb-0 opacity-75">Total Revenue</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+            <i class="fas fa-receipt fa-2x mb-3"></i>
+            <h3>PKR {{ data.total_expenses }}</h3>
+            <p class="mb-0 opacity-75">Total Expenses</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+            <i class="fas fa-boxes fa-2x mb-3"></i>
+            <h3>PKR {{ data.stock_value }}</h3>
+            <p class="mb-0 opacity-75">Stock Investment</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card" style="background: linear-gradient(135deg, {% if data.profit_loss >= 0 %}#10b981, #059669{% else %}#ef4444, #dc2626{% endif %});">
+            <i class="fas fa-chart-line fa-2x mb-3"></i>
+            <h3>PKR {{ data.profit_loss }}</h3>
+            <p class="mb-0 opacity-75">Net Profit</p>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Monthly Profit & Loss ({{ data.current_year }})</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-area me-2"></i>Yearly Profit & Loss Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="yearlyChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Analysis -->
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Monthly Breakdown ({{ data.current_year }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Month</th>
+                                <th>Revenue</th>
+                                <th>Expenses</th>
+                                <th>Profit/Loss</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for month_data in data.monthly_data %}
+                            <tr>
+                                <td><strong>{{ ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month_data[0]|int - 1] }}</strong></td>
+                                <td class="text-success">PKR {{ month_data[1] }}</td>
+                                <td class="text-warning">PKR {{ month_data[2] }}</td>
+                                <td class="{% if month_data[3] >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {% if month_data[3] >= 0 %}+{% endif %} PKR {{ month_data[3] }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Yearly Performance</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Year</th>
+                                <th>Revenue</th>
+                                <th>Expenses</th>
+                                <th>Profit/Loss</th>
+                                <th>Growth</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in range(data.yearly_data|length) %}
+                            {% set year_data = data.yearly_data[i] %}
+                            <tr>
+                                <td><strong>{{ year_data[0] }}</strong></td>
+                                <td class="text-success">PKR {{ year_data[1] }}</td>
+                                <td class="text-warning">PKR {{ year_data[2] }}</td>
+                                <td class="{% if year_data[3] >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {% if year_data[3] >= 0 %}+{% endif %} PKR {{ year_data[3] }}
+                                </td>
+                                <td>
+                                    {% if i > 0 %}
+                                        {% set prev_profit = data.yearly_data[i-1][3] %}
+                                        {% set growth = ((year_data[3] - prev_profit) / prev_profit * 100) if prev_profit != 0 else 0 %}
+                                        <span class="{% if growth >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if growth >= 0 %}+{% endif %}{{ growth|round(1) }}%
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Business Insights -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Business Insights</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="alert {% if data.profit_loss >= 0 %}alert-success{% else %}alert-danger{% endif %}">
+                            <h6>Overall Performance:</h6>
+                            {% if data.profit_loss >= 0 %}
+                                <p class="mb-0">✅ Your business is profitable!</p>
+                            {% else %}
+                                <p class="mb-0">⚠️ Business is running at a loss</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-info">
+                            <h6>Profit Margin:</h6>
+                            <p class="mb-0">{{ ((data.profit_loss / data.total_revenue) * 100)|round(2) if data.total_revenue > 0 else 0 }}%</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-warning">
+                            <h6>Expense Ratio:</h6>
+                            <p class="mb-0">{{ ((data.total_expenses / data.total_revenue) * 100)|round(2) if data.total_revenue > 0 else 0 }}%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Monthly Profit & Loss Chart
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+const monthlyChart = new Chart(monthlyCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for month_data in data.monthly_data %}'{{ ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month_data[0]|int - 1] }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Revenue',
+            data: [{% for month_data in data.monthly_data %}{{ month_data[1] }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: 'rgba(16, 185, 129, 0.8)',
+            borderColor: 'rgba(16, 185, 129, 1)',
+            borderWidth: 2
+        }, {
+            label: 'Expenses',
+            data: [{% for month_data in data.monthly_data %}{{ month_data[2] }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: 'rgba(245, 158, 11, 0.8)',
+            borderColor: 'rgba(245, 158, 11, 1)',
+            borderWidth: 2
+        }, {
+            label: 'Profit/Loss',
+            data: [{% for month_data in data.monthly_data %}{{ month_data[3] }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [{% for month_data in data.monthly_data %}{% if month_data[3] >= 0 %}'rgba(0, 255, 0, 0.8)'{% else %}'rgba(255, 0, 0, 0.8)'{% endif %}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderColor: [{% for month_data in data.monthly_data %}{% if month_data[3] >= 0 %}'rgba(0, 255, 0, 1)'{% else %}'rgba(255, 0, 0, 1)'{% endif %}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Monthly Financial Performance'
+            },
+            legend: {
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return 'PKR ' + value;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Yearly Profit & Loss Chart
+const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
+const yearlyChart = new Chart(yearlyCtx, {
+    type: 'line',
+    data: {
+        labels: [{% for year_data in data.yearly_data %}'{{ year_data[0] }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Revenue',
+            data: [{% for year_data in data.yearly_data %}{{ year_data[1] }}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderColor: 'rgba(16, 185, 129, 1)',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            fill: true,
+            tension: 0.4
+        }, {
+            label: 'Expenses',
+            data: [{% for year_data in data.yearly_data %}{{ year_data[2] }}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderColor: 'rgba(245, 158, 11, 1)',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            fill: true,
+            tension: 0.4
+        }, {
+            label: 'Profit/Loss',
+            data: [{% for year_data in data.yearly_data %}{{ year_data[3] }}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderColor: 'rgba(99, 102, 241, 1)',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Yearly Financial Trends'
+            },
+            legend: {
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return 'PKR ' + value;
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
